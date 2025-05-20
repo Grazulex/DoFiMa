@@ -102,66 +102,17 @@ def check_status():
 
     Console().print(table)
 
-def link_dotfile(name: str, is_directory: bool = False):
+def link_dotfile(name: str):
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
-
     source_path = dotfiles_dir / name
-    if not source_path.is_dir():
-        target = Path.home() / f".{name}"
-        if is_directory:
-            print_error(f"📄 Dotfile {source_path} is a file: and you use the -dir flag.")
-        else:
-            if target.exists():
-                if target.is_symlink():
-                    unlink_file(target)
-                else:
-                    print_error(f"⚠ {target} exists but is not a symlink. Skipped.")
-                    return
-            link_file(source_path, target)
-    else:
-        if is_directory:
-            #if source_path is a directory like /dotfiles/nvim/ and in this one we have :
-            # config.test
-            # .config/config2.test
-            # .local/config3.test
-            # we want to create a symlink in the home directory like :
-            # ~/config.test
-            # nvim/config.test in the ~/.config/ directory
-            # nvim/config.test in the ~/.local/ directory
-
-            # list all files in the directory
-            # and create a symlink for each one
-            # if the file is a directory, create a symlink in the home directory
-            # if the file is a file, create a symlink in the home directory
-
-            files = os.listdir(source_path)
-            for file in files:
-                file_path = source_path / file
-                if file_path.is_dir():
-                    target = Path.home() / f".{file}"
-                    if target.exists():
-                        if target.is_symlink():
-                            #target.unlink()
-                            print_warning(f"🗑️  Removed existing symlink: {target}")
-                        else:
-                            print_error(f"⚠ {target} exists but is not a symlink. Skipped.")
-                            return
-                    #target.symlink_to(file_path, target_is_directory=True)
-                    print_success(f"🔗 Created symlink: {target} -> {file_path}")
-
-                else:
-                    # create a symlink in the home directory
-                    target = Path.home() / f".{file}"
-                    if target.exists():
-                        if target.is_symlink():
-                            unlink_file(target)
-                        else:
-                            print_error(f"⚠ {target} exists but is not a symlink. Skipped.")
-                            return
-                    link_file(file_path, target)
-        else:
-            print_error(f"⚠ {source_path} is a directory. Use --dir option to link.")
+    if not source_path.exists():
+        print_error(f"⚠ {source_path} does not exist. Please run command 'new' first.")
+        return
+    for (dir_path, dir_names, file_names) in os.walk(source_path):
+        print(f"📦 Linking directory: {dir_path}")
+        print(f"📦 Linking files: {file_names}")
+        print(f"📦 Linking directories: {dir_names}")
 
 
 def unlink_dotfile(name: str, is_directory: bool = False):

@@ -17,3 +17,9 @@ def print_error(message: str):
     Print an error message in red.
     """
     typer.secho(message, fg=typer.colors.RED)
+
+def print_info(message: str):
+    """
+    Print an info message in blue.
+    """
+    typer.secho(message, fg=typer.colors.BLUE)

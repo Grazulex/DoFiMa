@@ -1,5 +1,6 @@
 import typer
 from dofima.config import init_config
+from dofima.tools.directories import init_directory
 from dofima.dotfile import create_dotfile
 from dofima.dotfile import check_status
 from dofima.dotfile import unlink_dotfile
@@ -10,41 +11,25 @@ from pathlib import Path
 app = typer.Typer(help="DoFiMa: Dotfiles Manager")
 
 @app.command()
-def init(directory: str = typer.Option(None, "--dir", "-d", help="Dotfiles root directory")):
-    """Initialize DoFiMa with a dotfiles directory"""
+def init(
+    directory: str = typer.Option(None, "--dir", "-d", help="Dotfiles root directory"),
+    git_repo: str = typer.Option(None, "--git", "-g", help="Git repository URL"),
+):
+    """Initialize DoFiMa with a dotfiles directory & optionally a git repository"""
     dotfiles_path = Path(directory).expanduser().resolve() if directory else Path.cwd()
-    init_config(dotfiles_path)
-
+    init_config(dotfiles_path, git_repo)
 
 @app.command()
 def new(
-    name: str,
-    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite of existing dotfile/directory"),
+    name: str = typer.Argument(..., help="Name of the DotFile directory for the application"),
+    app_name: str = typer.Option(None, "--app", "-a", help="Name of the application. If not provided, the name will be used"),
 ):
-    """Create a new dotfile and symlink it"""
-    create_dotfile(name, is_directory, force)
-
-
-@app.command()
-def unlink(
-    name: str,
-    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
-):
-    """Remove the symlink and untrack the dotfile"""
-    unlink_dotfile(name, is_directory)
+    """Create a new dotfile directory for a given application"""
+    init_directory(name, app_name)
 
 @app.command()
 def link(
-    name: str,
-    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
+    name: str = typer.Argument(..., help="Name of the DotFile directory for the application"),
 ):
-    """Create the symlink and track the dotfile"""
-    link_dotfile(name, is_directory)
-
-
-@app.command()
-def status():
-    """Show status of all tracked dotfiles"""
-    check_status()
-
+    """Link a dotfile directory to the home directory via symlink"""
+    link_dotfile(name)
