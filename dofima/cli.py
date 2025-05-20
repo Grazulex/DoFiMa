@@ -3,6 +3,7 @@ from dofima.config import init_config
 from dofima.dotfile import create_dotfile
 from dofima.dotfile import check_status
 from dofima.dotfile import unlink_dotfile
+from dofima.dotfile import link_dotfile
 
 from pathlib import Path
 
@@ -18,17 +19,28 @@ def init(directory: str = typer.Option(None, "--dir", "-d", help="Dotfiles root 
 @app.command()
 def new(
     name: str,
-    target: str = typer.Option(None, "--target", "-t", help="Target path to symlink to"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite of target file")
+    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite of existing dotfile/directory"),
 ):
-    """Create a new dotfile and symlink it to the given target"""
-    create_dotfile(name, target, force)
+    """Create a new dotfile and symlink it"""
+    create_dotfile(name, is_directory, force)
 
 
 @app.command()
-def unlink(name: str):
+def unlink(
+    name: str,
+    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
+):
     """Remove the symlink and untrack the dotfile"""
-    unlink_dotfile(name)
+    unlink_dotfile(name, is_directory)
+
+@app.command()
+def link(
+    name: str,
+    is_directory : bool = typer.Option(None, "--dir", "-d", help="Dotfiles is a directory"),
+):
+    """Create the symlink and track the dotfile"""
+    link_dotfile(name, is_directory)
 
 
 @app.command()

@@ -5,75 +5,56 @@ import typer
 from rich.table import Table
 from rich.console import Console
 
-def create_dotfile(name: str, target_path: str = None, force: bool = False):
+def create_dotfile(name: str, is_directory: bool = False, force: bool = False):
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
-    container_path = dotfiles_dir / name
-    container_path.mkdir(parents=True, exist_ok=True)
 
-    # 🧠 Cherche tous les répertoires de type .config/xxx ou .local/yyy
-    mount_points = []
-    for p in (container_path).rglob("*"):
-        if p.is_dir():
-            try:
-                rel = p.relative_to(container_path)
-                if (
-                    len(rel.parts) >= 2 and
-                    rel.parts[0].startswith(".")  # ex: .config
-                ):
-                    mount_points.append(rel)
-            except ValueError:
-                continue
+    source_path = dotfiles_dir / name
 
-    if mount_points:
-        typer.secho(f"📦 App container detected: {name}", fg=typer.colors.CYAN)
-        for rel_path in sorted(set(mount_points)):
-            source = container_path / rel_path
-            target = Path.home() / rel_path
-
-            if target.exists():
-                if target.is_symlink():
-                    target.unlink()
-                    typer.secho(f"🔁 Replaced symlink: {target}", fg=typer.colors.YELLOW)
-                elif force:
-                    target.unlink(missing_ok=True)
-                    typer.secho(f"⚠ Force removed existing: {target}", fg=typer.colors.YELLOW)
-                else:
-                    typer.secho(f"❌ {target} exists. Use --force to overwrite.", fg=typer.colors.RED)
-                    continue
-
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.symlink_to(source.resolve(), target_is_directory=True)
-            typer.secho(f"✅ Linked {target} → {source}", fg=typer.colors.GREEN)
-        return
-
-    # 🧱 Fichier simple
-    source_path = container_path
-    if not source_path.exists():
-        if "." in Path(name).name:
-            source_path.touch()
-            typer.secho(f"📄 Created file: {source_path}", fg=typer.colors.GREEN)
-        else:
-            source_path.mkdir(parents=True)
-            typer.secho(f"📁 Created directory: {source_path}", fg=typer.colors.GREEN)
+    if is_directory:
+        typer.secho(f"📦 Dotfile is a directory: {source_path}", fg=typer.colors.YELLOW)
     else:
-        typer.secho(f"📄 Source already exists: {source_path}", fg=typer.colors.YELLOW)
+        typer.secho(f"📄 Dotfile Création du fichier : {source_path}", fg=typer.colors.YELLOW)
 
-    target = Path(target_path).expanduser() if target_path else Path.home() / f".{name}"
-    if target.exists():
-        if target.is_symlink():
-            target.unlink()
-            typer.secho(f"🔁 Replaced symlink: {target}", fg=typer.colors.YELLOW)
-        elif force:
-            target.unlink()
-            typer.secho(f"⚠ Force removed existing file: {target}", fg=typer.colors.YELLOW)
+    if source_path.exists() and not force:
+        typer.secho(f"⚠ {source_path} already exists. Use --force to overwrite.", fg=typer.colors.YELLOW)
+        return
+    elif source_path.exists() and force:
+        typer.secho(f"⚠ {source_path} already exists. Overwriting...", fg=typer.colors.YELLOW)
+        #remove symlink (target_path) if it exists
+        if is_directory:
+            typer.secho(f"🗑️  Removed existing directory: {source_path}", fg=typer.colors.YELLOW)
+            source_path.rmdir()
+            typer.secho(f"📦 Created directory: {source_path}", fg=typer.colors.YELLOW)
+            source_path.mkdir(parents=True, exist_ok=True)
         else:
-            typer.secho(f"❌ {target} exists. Use --force to overwrite.", fg=typer.colors.RED)
-            raise typer.Exit(1)
+            typer.secho(f"🗑️  Removed existing file: {source_path}", fg=typer.colors.YELLOW)
+            source_path.unlink()
+            typer.secho(f"📄 Created file: {source_path}", fg=typer.colors.YELLOW)
+            source_path.touch()
+    else:
+        if is_directory:
+            source_path.mkdir(parents=True, exist_ok=True)
+            typer.secho(f"📦 Created directory: {source_path}", fg=typer.colors.YELLOW)
+        else:
+            source_path.touch()
+            typer.secho(f"📄 Created file: {source_path}", fg=typer.colors.YELLOW)
 
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.symlink_to(source_path.resolve(), target_is_directory=source_path.is_dir())
-    typer.secho(f"✅ Linked {target} → {source_path}", fg=typer.colors.GREEN)
+    #if not is_directory, create a symlink to the ~/ directory
+    target_path = Path.home() / f".{name}"
+    if not is_directory:
+        if target_path.exists():
+            if target_path.is_symlink():
+                target_path.unlink()
+                typer.secho(f"🗑️  Removed existing symlink: {target_path}", fg=typer.colors.YELLOW)
+            else:
+                typer.secho(f"⚠ {target_path} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+                return
+        target_path.symlink_to(source_path, target_is_directory=True)
+        typer.secho(f"🔗 Created symlink: {target_path} -> {source_path}", fg=typer.colors.GREEN)
+    else:
+        typer.secho(f"📦 {source_path} is a directory. When content is done, use ""link"" command to create symlink", fg=typer.colors.YELLOW)
+
 
 def check_status():
     config = load_config()
@@ -82,6 +63,7 @@ def check_status():
 
     table = Table(title="DoFiMa Status")
     table.add_column("Source", style="cyan")
+    table.add_column("Type", style="yellow")
     table.add_column("Target", style="magenta")
     table.add_column("Status", style="bold")
 
@@ -90,6 +72,12 @@ def check_status():
         if not item.is_file() and not item.is_dir():
             continue  # Skip weird entries
         rel_path = item.relative_to(dotfiles_dir)
+
+        #check if dir
+        if item.is_dir():
+            is_dir = "[blue]📦 Directory"
+        else:
+            is_dir = "[yellow]📄 File"
 
         # Skip anything like README, .git, etc. unless nested under a container
         if rel_path.parts[0].startswith(".") and len(rel_path.parts) == 1 and item.is_file():
@@ -105,6 +93,8 @@ def check_status():
 
         source = item.resolve()
 
+
+
         if not target_path.exists():
             status = "[red]❌ Missing"
         elif not target_path.is_symlink():
@@ -114,18 +104,67 @@ def check_status():
         else:
             status = "[green]✅ OK"
 
-        table.add_row(str(rel_path), str(target_path), status)
+        table.add_row(str(rel_path), str(is_dir), str(target_path), status)
 
     Console().print(table)
 
+def link_dotfile(name: str, is_directory: bool = False):
+    config = load_config()
+    dotfiles_dir = Path(config["dotfiles_dir"])
 
-def unlink_dotfile(name: str):
-    target = Path.home() / f".{name}"
-    if target.is_symlink():
-        target.unlink()
-        typer.secho(f"🧹 Unlinked: {target}", fg=typer.colors.GREEN)
-    elif target.exists():
-        typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+    source_path = dotfiles_dir / name
+    if not source_path.is_dir():
+        target = Path.home() / f".{name}"
+        if target.exists():
+            if target.is_symlink():
+                target.unlink()
+                typer.secho(f"🗑️  Removed existing symlink: {target}", fg=typer.colors.YELLOW)
+            else:
+                typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+                return
+        target.symlink_to(source_path, target_is_directory=True)
+        typer.secho(f"🔗 Created symlink: {target} -> {source_path}", fg=typer.colors.GREEN)
     else:
-        typer.secho(f"⚠ {target} does not exist.", fg=typer.colors.YELLOW)
+        if is_directory:
+            target = Path.home() / f".{name}"
+            if target.exists():
+                if target.is_symlink():
+                    target.unlink()
+                    typer.secho(f"🗑️  Removed existing symlink: {target}", fg=typer.colors.YELLOW)
+                else:
+                    typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+                    return
+            target.symlink_to(source_path, target_is_directory=True)
+            typer.secho(f"🔗 Created symlink: {target} -> {source_path}", fg=typer.colors.GREEN)
+        else:
+            typer.secho(f"⚠ {source_path} is a directory. Use --dir option to link.", fg=typer.colors.YELLOW)
+
+
+def unlink_dotfile(name: str, is_directory: bool = False):
+    config = load_config()
+    dotfiles_dir = Path(config["dotfiles_dir"])
+
+    source_path = dotfiles_dir / name
+    # Check if source_path is a directory
+    if not source_path.is_dir():
+        target = Path.home() / f".{name}"
+        if target.is_symlink():
+            target.unlink()
+            typer.secho(f"🧹 Unlinked: {target}", fg=typer.colors.GREEN)
+        elif target.exists():
+            typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+        else:
+            typer.secho(f"⚠ {target} does not exist.", fg=typer.colors.YELLOW)
+    else:
+        if is_directory:
+            target = Path.home() / f".{name}"
+            if target.is_symlink():
+                target.unlink()
+                typer.secho(f"🧹 Unlinked: {target}", fg=typer.colors.GREEN)
+            elif target.exists():
+                typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+            else:
+                typer.secho(f"⚠ {target} does not exist.", fg=typer.colors.YELLOW)
+        else:
+            typer.secho(f"⚠ {source_path} is a directory. Use --dir option to unlink.", fg=typer.colors.YELLOW)
 
