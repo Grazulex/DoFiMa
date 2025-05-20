@@ -14,7 +14,7 @@ def init(directory: str = typer.Option(None, "--dir", "-d", help="Dotfiles root 
     """Initialize DoFiMa with a dotfiles directory"""
     dotfiles_path = Path(directory).expanduser().resolve() if directory else Path.cwd()
     init_config(dotfiles_path)
-    typer.secho(f"✔ DoFiMa is now tracking: {dotfiles_path}", fg=typer.colors.GREEN)
+
 
 @app.command()
 def new(
