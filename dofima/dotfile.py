@@ -115,18 +115,9 @@ def link_dotfile(name: str, is_directory: bool = False):
     source_path = dotfiles_dir / name
     if not source_path.is_dir():
         target = Path.home() / f".{name}"
-        if target.exists():
-            if target.is_symlink():
-                target.unlink()
-                typer.secho(f"🗑️  Removed existing symlink: {target}", fg=typer.colors.YELLOW)
-            else:
-                typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
-                return
-        target.symlink_to(source_path, target_is_directory=True)
-        typer.secho(f"🔗 Created symlink: {target} -> {source_path}", fg=typer.colors.GREEN)
-    else:
         if is_directory:
-            target = Path.home() / f".{name}"
+            typer.secho(f"📄 Dotfile {source_path} is a file: and you use the -dir flag.", fg=typer.colors.YELLOW)
+        else:
             if target.exists():
                 if target.is_symlink():
                     target.unlink()
@@ -136,6 +127,49 @@ def link_dotfile(name: str, is_directory: bool = False):
                     return
             target.symlink_to(source_path, target_is_directory=True)
             typer.secho(f"🔗 Created symlink: {target} -> {source_path}", fg=typer.colors.GREEN)
+    else:
+        if is_directory:
+            #if source_path is a directory like /dotfiles/nvim/ and in this one we have :
+            # config.test
+            # .config/config2.test
+            # .local/config3.test
+            # we want to create a symlink in the home directory like :
+            # ~/config.test
+            # nvim/config.test in the ~/.config/ directory
+            # nvim/config.test in the ~/.local/ directory
+
+            # list all files in the directory
+            # and create a symlink for each one
+            # if the file is a directory, create a symlink in the home directory
+            # if the file is a file, create a symlink in the home directory
+
+            files = os.listdir(source_path)
+            for file in files:
+                file_path = source_path / file
+                if file_path.is_dir():
+                    target = Path.home() / f".{file}"
+                    if target.exists():
+                        if target.is_symlink():
+                            #target.unlink()
+                            typer.secho(f"🗑️  Removed existing symlink: {target}", fg=typer.colors.YELLOW)
+                        else:
+                            typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+                            return
+                    #target.symlink_to(file_path, target_is_directory=True)
+                    typer.secho(f"🔗 Created symlink: {target} -> {file_path}", fg=typer.colors.GREEN)
+
+                else:
+                    # create a symlink in the home directory
+                    target = Path.home() / f".{file}"
+                    if target.exists():
+                        if target.is_symlink():
+                            target.unlink()
+                            typer.secho(f"🗑️  Removed existing symlink: {target}", fg=typer.colors.YELLOW)
+                        else:
+                            typer.secho(f"⚠ {target} exists but is not a symlink. Skipped.", fg=typer.colors.YELLOW)
+                            return
+                    target.symlink_to(file_path, target_is_directory=True)
+                    typer.secho(f"🔗 Created symlink: {target} -> {file_path}", fg=typer.colors.GREEN)
         else:
             typer.secho(f"⚠ {source_path} is a directory. Use --dir option to link.", fg=typer.colors.YELLOW)
 
