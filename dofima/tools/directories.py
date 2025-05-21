@@ -1,16 +1,25 @@
 from pathlib import Path
-from dofima.tools.output import print_error, print_info
+from dofima.tools.output import print_error
 from rich.table import Table
 from rich.console import Console
 
 
 def create_directory(path: Path):
+    """
+    Create a directory at the specified path. If the directory already exists, it will be ignored.
+    """
     path.mkdir(parents=True, exist_ok=True)
 
 def remove_directory(path: Path):
+    """
+    Remove a directory at the specified path. If the directory does not exist, it will be ignored.
+    """
     path.rmdir()
 
 def init_directory(name: str, app_name: str = None):
+    """
+    Initialize a directory for a given application. If the directory already exists, it will be ignored.
+    """
     from dofima.config import load_config
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])

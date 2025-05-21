@@ -7,6 +7,9 @@ from dofima.tools.output import print_error
 from dofima.tools.files import link_file, unlink_file
 
 def check_status(name: str):
+    """
+    Check the status of dotfiles for a given application.
+    """
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
     skip_dirs = config["skip_dirs"]
@@ -37,6 +40,9 @@ def check_status(name: str):
     console.print(table)
 
 def link_dotfile(name: str):
+    """
+    Link a dotfile directory to the home directory via symlink.
+    """
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
     skip_dirs = config["skip_dirs"]
@@ -67,6 +73,9 @@ def link_dotfile(name: str):
     console.print(table)
 
 def unlink_dotfile(name: str):
+    """
+    Unlink a dotfile directory from the home directory.
+    """
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
     skip_dirs = config["skip_dirs"]
@@ -98,13 +107,13 @@ def unlink_dotfile(name: str):
 
 def compute_symlink_instructions(source_dir, skip_dirs):
     """
-    Génère une liste d'instructions de symlink :
-    - Symlink le dossier contenant un fichier s'il est sous un skip_dir.
-    - Symlink directement les fichiers qui sont en dehors des skip_dirs.
+    Generates a list of symlink instructions:
+    - Symlinks the folder containing a file if it is under a skip_dir.
+    - Directly symlinks files that are outside the skip_dirs.
 
-    :param source_dir: Répertoire racine des dotfiles
-    :param skip_dirs: Répertoires à ne pas symlinker eux-mêmes (ex: ['.config', '.local/share'])
-    :return: Liste de dicts {'source', 'destination', 'link_name'}
+    :param source_dir: Root directory of the dotfiles
+    :param skip_dirs: Directories not to be symlinked themselves (e.g. ['.config', '.local/share'])
+    :return: List of dicts {'source', 'destination', 'link_name'}
     """
     instructions = []
     skip_dirs_set = set(os.path.normpath(skip) for skip in skip_dirs)
@@ -116,10 +125,8 @@ def compute_symlink_instructions(source_dir, skip_dirs):
             rel_root = ""
 
         norm_rel_root = os.path.normpath(rel_root)
-        # Cas : sous un skip_dir → on symlink le dossier parent du fichier
         for skip in skip_dirs_set:
             if norm_rel_root.startswith(skip + os.sep):
-                # Ex: .local/share/nvim → on symlink .local/share/nvim une fois
                 top = os.path.join(*norm_rel_root.split(os.sep)[:len(skip.split(os.sep)) + 1])
                 if top not in seen_targets:
                     instructions.append({
@@ -130,7 +137,6 @@ def compute_symlink_instructions(source_dir, skip_dirs):
                     seen_targets.add(top)
                 break
         else:
-            # Fichiers hors skip_dirs → symlink un par un
             for name in files:
                 file_rel_path = os.path.normpath(os.path.join(norm_rel_root, name))
                 if file_rel_path not in seen_targets:

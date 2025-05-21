@@ -8,6 +8,9 @@ from dofima.tools.directories import create_directory
 CONFIG_PATH = Path.home() / ".config/dofima/config.json"
 
 def init_config(dotfiles_path: Path, git_repo: str = None):
+    """
+    Initialize the DoFiMa configuration with a dotfiles directory and an optional git repository.
+    """
     dotfiles_path = dotfiles_path.expanduser().resolve()
     create_directory(dotfiles_path)
     create_directory(CONFIG_PATH.parent)
