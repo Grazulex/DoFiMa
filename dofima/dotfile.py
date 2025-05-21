@@ -102,14 +102,14 @@ def check_status():
 
     Console().print(table)
 
-def link_dotfile(name: str, verbose: bool = False):
+def link_dotfile(name: str):
     config = load_config()
     dotfiles_dir = Path(config["dotfiles_dir"])
     skip_dirs = config["skip_dirs"]
     target_path = Path.home()
     source_path = dotfiles_dir / name
     if not source_path.exists():
-        print_error(f"⚠ {source_path} does not exist. Please run command 'new' first.", True)
+        print_error(f"⚠ {source_path} does not exist. Please run command 'new' first.")
         return
     #link files in root source_path
     for (file_names) in os.listdir(source_path):
@@ -118,9 +118,9 @@ def link_dotfile(name: str, verbose: bool = False):
             to_file = target_path / f"{file_names}"
             if os.path.exists(to_file):
                 if os.path.islink(to_file):
-                    unlink_file(to_file, verbose)
+                    unlink_file(to_file)
                 else:
-                    print_error(f"⚠ {to_file} exists but is not a symlink. Skipped.", verbose)
+                    print_error(f"⚠ {to_file} exists but is not a symlink. Skipped.")
                     continue
             #link_file(from_file,to_file)
 
@@ -130,11 +130,11 @@ def link_dotfile(name: str, verbose: bool = False):
         to_symlink = Path(entry['destination'])
         if os.path.exists(to_symlink):
             if os.path.islink(to_symlink):
-                unlink_file(to_symlink, verbose)
+                unlink_file(to_symlink)
             else:
-                print_error(f"⚠ {to_symlink} exists but is not a symlink. Skipped.", verbose)
+                print_error(f"⚠ {to_symlink} exists but is not a symlink. Skipped.")
                 continue
-        link_file(from_symlink, to_symlink, verbose)
+        link_file(from_symlink, to_symlink)
 
 
 
