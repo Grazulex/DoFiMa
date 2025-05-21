@@ -11,6 +11,9 @@ def check_status(name: str):
     dotfiles_dir = Path(config["dotfiles_dir"])
     skip_dirs = config["skip_dirs"]
     source_path = dotfiles_dir / name
+    if not source_path.exists():
+        print_error(f"⚠ {source_path} does not exist. Please run command 'new' first.")
+        return
 
     table = Table(title=f"DoFiMa Status of {name}")
     table.add_column("Source", style="cyan")
