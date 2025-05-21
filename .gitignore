@@ -1,6 +1,7 @@
-/.venv/
-/.idea/
-/test/
-/build/
-/dist/
-/__pycache__/
+.venv/
+.idea/
+build/
+dist/
+*.spec
+*.pyc
+__pycache__/
