@@ -3,7 +3,7 @@ import globals
 from dofima.config import init_config
 from dofima.tools.directories import init_directory
 from dofima.tools.output import print_success
-from dofima.dotfile import link_dotfile
+from dofima.dotfile import link_dotfile, unlink_dotfile, check_status
 
 from pathlib import Path
 
@@ -27,8 +27,8 @@ def new(
     app_name: str = typer.Option(None, "--app", "-a", help="Name of the application. If not provided, the name will be used"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ):
-    globals.state["verbose"] = verbose
     """Create a new dotfile directory for a given application"""
+    globals.state["verbose"] = verbose
     init_directory(name, app_name)
     print_success(f"📦 Created dotfiles directory: {name}")
 
@@ -37,7 +37,27 @@ def link(
     name: str = typer.Argument(..., help="Name of the DotFile directory for the application"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ):
-    globals.state["verbose"] = verbose
     """Link a dotfile directory to the home directory via symlink"""
+    globals.state["verbose"] = verbose
     link_dotfile(name)
     print_success(f"🔗 Linked dotfiles directory: {name}")
+
+@app.command()
+def unlink(
+    name: str = typer.Argument(..., help="Name of the DotFile directory for the application"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
+):
+    """Unlink a dotfile directory from the home directory"""
+    globals.state["verbose"] = verbose
+    unlink_dotfile(name)
+    print_success(f"🗑️  Unlinked dotfiles directory: {name}")
+
+@app.command()
+def status(
+    name: str = typer.Argument(..., help="Name of the DotFile directory for the application"),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
+):
+    """Check the status of dotfiles"""
+    globals.state["verbose"] = verbose
+    check_status(name)
+    print_success("✔ Checked dotfiles status")

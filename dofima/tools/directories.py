@@ -1,14 +1,14 @@
 from pathlib import Path
-from dofima.tools.output import print_warning, print_success, print_error, print_info
+from dofima.tools.output import print_error, print_info
+from rich.table import Table
+from rich.console import Console
 
 
 def create_directory(path: Path):
     path.mkdir(parents=True, exist_ok=True)
-    print_info(f"📁 Created directory: {path}")
 
 def remove_directory(path: Path):
     path.rmdir()
-    print_info(f"🗑️  Removed existing directory: {path}")
 
 def init_directory(name: str, app_name: str = None):
     from dofima.config import load_config
@@ -19,11 +19,16 @@ def init_directory(name: str, app_name: str = None):
         return
     sub_dirs = config.get("sub_dirs", [])
 
+    table = Table(title=f"Initialization of directory {name}")
+    table.add_column("Directory", style="cyan")
+    table.add_column("Status", style="green")
+
     source_path = dotfiles_dir / name
     if source_path.exists():
-        print_warning(f"⚠ {source_path} already exists. Skipped.")
+        table.add_row(str(source_path), "⚠ Directory already exists (ignored)")
     else:
         create_directory(source_path)
+        table.add_row(str(source_path), "✅ Created")
 
     for sub_dir in sub_dirs:
         if app_name:
@@ -33,5 +38,9 @@ def init_directory(name: str, app_name: str = None):
         sub_path = source_path / sub_dir
         if not sub_path.exists():
             create_directory(sub_path)
+            table.add_row(str(sub_path), "✅ Created")
         else:
-            print_warning(f"⚠ {sub_path} already exists. Skipped.")
+            table.add_row(str(sub_path), "⚠ Directory already exists (ignored)")
+
+    console = Console()
+    console.print(table)
